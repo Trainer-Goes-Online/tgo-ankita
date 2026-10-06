@@ -78,9 +78,9 @@ function Guide() {
       <div className="mx-auto mt-12 max-w-[1060px] lg:grid lg:grid-cols-[0.8fr_1fr] lg:items-start lg:gap-12">
         <div className="mb-10 lg:mb-0">
           <Art
-            src={asset('/system-images/ankita-portrait.webp')}
-            alt="Ankita Singh"
-            ratio="3 / 4"
+            src={asset('/system-images/ankita-award.webp')}
+            alt="Ankita Singh receiving an award on stage"
+            ratio="3 / 2"
             sizes="(min-width: 1024px) 420px, 100vw"
             className="rounded-3xl"
           />
