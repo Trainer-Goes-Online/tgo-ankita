@@ -753,6 +753,8 @@ button {
    watching it. */
 .kz-rail {
   overflow: hidden;
+  /* room inside the clip so card borders are not cut */
+  padding: 6px 0;
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0,
@@ -782,6 +784,19 @@ button {
    the same effect twice. */
 .kz-rail-track--reverse {
   animation-direction: reverse;
+}
+
+/* The screenshot walls run 44% faster than the video rail (92s / 1.2 / 1.2). */
+.kz-rail-track--shots {
+  animation-duration: 63.89s;
+}
+
+/* No edge fade on phones: the rails run edge to edge. */
+@media (max-width: 640px) {
+  .kz-rail {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
 }
 
 .kz-rail:hover .kz-rail-track,

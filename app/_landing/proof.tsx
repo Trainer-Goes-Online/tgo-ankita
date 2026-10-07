@@ -223,7 +223,6 @@ function ClipCard({
       style={{
         background: C.surface,
         border: `1px solid ${C.lineStrong}`,
-        boxShadow: '0 18px 40px -28px rgba(46,33,64,0.34)',
       }}
     >
       <div
@@ -322,8 +321,7 @@ function ClipCard({
               className="absolute left-1/2 top-1/2 grid h-14 w-14 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full transition-transform duration-300 group-hover:scale-105"
               style={{
                 background: C.surface,
-                boxShadow:
-                  'inset 0 0 0 1px rgba(220,203,238,0.45), 0 10px 26px -10px rgba(0,0,0,0.7)',
+                boxShadow: 'inset 0 0 0 1px rgba(220,203,238,0.45)',
               }}
             >
               <Play weight="fill" className="h-5 w-5 translate-x-[1px]" style={{ color: C.ink }} />
@@ -405,7 +403,7 @@ function ShotRail({
 }) {
   return (
     <div className="kz-rail" role="region" aria-label={label}>
-      <div className={`kz-rail-track${reverse ? ' kz-rail-track--reverse' : ''}`}>
+      <div className={`kz-rail-track kz-rail-track--shots${reverse ? ' kz-rail-track--reverse' : ''}`}>
         {[0, 1].map((copy) =>
           shots.map((shot, idx) => (
             <figure
@@ -489,7 +487,7 @@ export function Testimonials() {
       {/* The two walls the source asks for, in its own two directions: seven
           travelling right to left, then six travelling left to right. They sit
           OUTSIDE the column so they run the full width of the band. */}
-      <div className="-mx-4 mt-12 space-y-4 sm:mt-16">
+      <div className="-mx-4 mt-4 space-y-4">
         <ShotRail shots={SHOTS_RIGHT_TO_LEFT} label="Message screenshots, first wall" />
         <ShotRail shots={SHOTS_LEFT_TO_RIGHT} reverse label="Message screenshots, second wall" />
       </div>

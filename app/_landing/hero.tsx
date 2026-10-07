@@ -193,9 +193,9 @@ export function Hero() {
                 No priority: the LCP candidate on a phone is the headline above
                 it, and preloading a banner pushes that text further out. */}
             <Art
-              src={asset('/system-images/offer-stack-wide.webp')}
+              src={asset('/system-images/offer-stack-animated.webp')}
               alt="Ankita with the 5 day cards, the 4 guides and the live Zoom sessions"
-              ratio="16 / 9"
+              ratio="1 / 1"
               sizes="100vw"
               className="mt-7 lg:hidden"
             />
