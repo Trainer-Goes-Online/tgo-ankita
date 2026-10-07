@@ -9,9 +9,10 @@ import { readOrderContext } from '@/lib/order-notes';
 import { pabblyReady, sendPabblyPurchase } from '@/lib/pabbly';
 
 /**
- * Razorpay webhook, and the ONLY place a Purchase is reported.
+ * Razorpay webhook, and the ONLY place the `sales` event is reported (Meta's standard
+ * Purchase is restricted on this health & wellness dataset and is never sent).
  *
- * A browser-side Purchase would miss every UPI payer who completes inside
+ * A browser-side sale event would miss every UPI payer who completes inside
  * their bank app and never returns to the tab, which in India is most of them.
  * It is also the only place the payment is proven rather than merely
  * attempted. The success handler on the checkout page navigates and nothing
@@ -56,7 +57,7 @@ export async function POST(req: Request) {
 
   const parsed = JSON.parse(raw);
   if (parsed.event !== 'payment.captured') {
-    // Razorpay sends many event types; only a captured payment is a Purchase.
+    // Razorpay sends many event types; only a captured payment is a sale.
     return NextResponse.json({ ok: true, ignored: parsed.event });
   }
 
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
      subscribed event to every registered URL. So this endpoint receives every
      captured payment on the account: a second funnel sharing it, a payment
      link created by hand in the dashboard, an invoice, a renewal. Every one
-     of those was being reported as a sale of this challenge, with a Purchase
+     of those was being reported as a sale of this challenge, with a `sales` event
      to Meta, a purchase to GA4 and a buyer row to the fulfilment hand-off.
 
      `notes.kind` is this funnel's mark, written on the order at create time.
@@ -173,7 +174,7 @@ export async function POST(req: Request) {
         eventSourceUrl: `${eventSourceUrl}/checkout`,
         amountRupees: valueRupees,
         isTest: isTestMode(),
-        /* The same id sent to Meta as the Purchase event_id, so a conversion
+        /* The same id sent to Meta as the `sales` event_id, so a conversion
            can be traced from the sheet back to a specific row in Events
            Manager, or replayed against it. */
         purchaseEventId: paymentId,
@@ -194,7 +195,7 @@ export async function POST(req: Request) {
     : { ok: false, status: 0 };
 
   if (!capiReady()) {
-    console.warn('[rzp-webhook] CAPI not configured, Meta Purchase not sent');
+    console.warn('[rzp-webhook] CAPI not configured, Meta sales event not sent');
     return NextResponse.json({
       ok: true,
       capi: 'skipped',
@@ -208,7 +209,7 @@ export async function POST(req: Request) {
   const result = await sendCapiEvent({
     pixelId: CHECKOUT_CONFIG.meta.pixelId,
     accessToken: CHECKOUT_CONFIG.meta.accessToken,
-    eventName: 'Purchase',
+    eventName: 'sales',
     eventId: paymentId,
     eventSourceUrl,
     user: {
@@ -235,7 +236,7 @@ export async function POST(req: Request) {
        during dataset classification, and those are the values that name the
        condition. Occupation is the reviewed exception: neither of its two
        possible values is a health term, and it is what lets the buyer split be
-       read on Purchase rather than only on pay-intent. */
+       read on `sales` rather than only on pay-intent. */
     orderId: orderId || undefined,
     occupation,
     testEventCode: CHECKOUT_CONFIG.meta.testEventCode || undefined,
@@ -245,7 +246,7 @@ export async function POST(req: Request) {
      silently stopped arriving would otherwise show up as nothing worse than a
      slowly falling match quality. */
   console.log(
-    `[rzp-webhook] ${paymentId} Purchase capi=${result.ok} ga4=${ga4.ok} ` +
+    `[rzp-webhook] ${paymentId} sales capi=${result.ok} ga4=${ga4.ok} ` +
       /* The health check moved off createdAt, which now comes from Razorpay
          and is therefore always present: it could no longer tell us whether
          the NOTES unpacked, which is the thing worth watching. landingUrl is

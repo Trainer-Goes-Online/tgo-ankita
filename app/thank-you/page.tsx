@@ -101,7 +101,7 @@ export default function ThankYouPage() {
 function ThankYou() {
   const paymentId = useSearchParams().get('p') ?? '';
 
-  /* GA4 purchase only. Meta's Purchase and the server-side GA4 copy both come
+  /* GA4 purchase only. Meta's `sales` event and the server-side GA4 copy both come
      from the Razorpay webhook, where the payment is proven and where buyers
      who never return to this page are still counted, which for UPI is most of
      them.

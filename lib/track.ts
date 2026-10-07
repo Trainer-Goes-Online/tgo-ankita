@@ -16,11 +16,13 @@ import {
 
 /**
  * The one place a page calls to record something. Each function fires the
- * matching STANDARD event on both platforms: Meta by name via the CAPI route,
- * GA4 by its own recommended name.
+ * matching event on both platforms: Meta via the CAPI route under its CUSTOM
+ * name (the dataset is health & wellness restricted, so the standard
+ * AddToCart/InitiateCheckout/Purchase names are never sent), GA4 by its own
+ * recommended name.
  *
- * The two vocabularies differ and that is expected, Meta's InitiateCheckout
- * is GA4's begin_checkout. Mapping them here keeps that translation in one
+ * The vocabularies differ and that is expected: Meta's itc_event is GA4's
+ * begin_checkout. Mapping them here keeps that translation in one
  * file instead of every call site.
  */
 
@@ -90,7 +92,7 @@ export function trackViewItem() {
  * click is not an arrival. See FunnelTracker for the full note.
  */
 export function trackAddToCart() {
-  capi('AddToCart');
+  capi('atc_event');
   ga4AddToCart(money);
 }
 
@@ -106,27 +108,27 @@ export function trackBeginCheckout() {
  * survives that navigation because capi() posts with keepalive: true.
  */
 export function trackInitiateCheckout(person: Person) {
-  capi('InitiateCheckout', person);
+  capi('itc_event', person);
 
-  /* QualifiedLead, for working professionals only, at the same instant.
-     Not a new funnel stage: InitiateCheckout already marks this moment, but
+  /* qc_event, for working professionals only, at the same instant.
+     Not a new funnel stage: itc_event already marks this moment, but
      a separate event so the segment the client actually sells to can be
      optimised toward and seeded into a lookalike. Homemakers deliberately get
-     no second event: a QualifiedLead audience that contains both answers
+     no second event: a qc_event audience that contains both answers
      cannot be targeted as one.
 
      Fired as its own call rather than folded into the one above because Meta
      dedupes on event_name + event_id, and the route derives a different id per
      name. Two calls, two events, no collision. */
   if (person.occupation === 'working_professional') {
-    capi('QualifiedLead', person);
+    capi('qc_event', person);
   }
 
   ga4AddPaymentInfo({ value: VALUE, currency: 'INR' });
 }
 
 /**
- * GA4 only. Meta's Purchase comes from the Razorpay webhook, where the payment
+ * GA4 only. Meta's `sales` event comes from the Razorpay webhook, where the payment
  * is proven, firing it here as well would double-count every sale.
  */
 export function trackPurchase(transactionId: string) {
