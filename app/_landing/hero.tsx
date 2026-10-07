@@ -313,9 +313,9 @@ export function Hero() {
               }}
             >
               <Art
-                src={asset('/system-images/offer-stack.webp')}
+                src={asset('/system-images/offer-stack-animated.webp')}
                 alt="Ankita with the 5 day cards and the 4 guides"
-                ratio="4 / 3"
+                ratio="1 / 1"
                 sizes="(min-width: 1024px) 460px, 100vw"
                 className="mb-6"
               />
@@ -397,7 +397,7 @@ const STATS = [
   {
     icon: Star,
     big: `${CLIENT_RATING} Review`,
-    small: 'Women 28–40',
+    small: 'Women 40+',
     bed: C.goldPale,
     fg: C.goldInk,
   },

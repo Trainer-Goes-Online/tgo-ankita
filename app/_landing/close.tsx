@@ -97,7 +97,7 @@ function Guide() {
               Meditation Teacher training and a Master&rsquo;s in Yoga Therapy.
             </p>
             <p>
-              Having navigated her own journey with PCOD/PCOS before conceiving
+              Having navigated her own journey with PCOS before conceiving
               naturally, Ankita understands fertility not only through
               professional training, but also through lived experience.
             </p>
