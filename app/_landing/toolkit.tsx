@@ -167,7 +167,7 @@ export default function Toolkit() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
             <div className="flex shrink-0 flex-col items-start gap-4">
               <span
-                className="font-display text-[44px] font-semibold leading-none"
+                className="font-display text-[44px] font-bold leading-none"
                 style={{ color: C.goldDeep }}
               >
                 {lead.n}
@@ -176,14 +176,14 @@ export default function Toolkit() {
             </div>
             <div className="min-w-0 flex-1">
               <h3
-                className="font-display text-[24px] font-semibold leading-snug sm:text-[27px]"
+                className="font-display text-[24px] font-bold leading-snug sm:text-[27px]"
                 style={{ color: C.ink }}
               >
                 {lead.title}
               </h3>
               {/* goldInk, not goldDeep: 18px bold falls just under the
                   18.66px large-text threshold, so it takes the 5.3:1 step. */}
-              <p className="mt-1.5 font-display text-[18px] font-semibold" style={{ color: C.goldInk }}>
+              <p className="mt-1.5 font-display text-[18px] font-bold" style={{ color: C.goldInk }}>
                 ({inr(lead.value)} Value)
               </p>
               <p
@@ -228,21 +228,21 @@ export default function Toolkit() {
                   <div className="flex items-center gap-3">
                     <IconBed icon={Glyph} />
                     <span
-                      className="font-display text-[26px] font-semibold leading-none"
+                      className="font-display text-[26px] font-bold leading-none"
                       style={{ color: C.goldDeep }}
                     >
                       {item.n}
                     </span>
                   </div>
                   <span
-                    className="font-display text-[16px] font-semibold"
+                    className="font-display text-[16px] font-bold"
                     style={{ color: C.goldInk }}
                   >
                     ({inr(item.value)} Value)
                   </span>
                 </div>
                 <h3
-                  className="mt-4 font-display text-[19px] font-semibold leading-snug"
+                  className="mt-4 font-display text-[19px] font-bold leading-snug"
                   style={{ color: C.ink }}
                 >
                   {item.title}

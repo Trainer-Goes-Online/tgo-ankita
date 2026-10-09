@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Fraunces, Manrope } from 'next/font/google';
+import { Lora, Manrope } from 'next/font/google';
 
 import Analytics from '@/components/Analytics';
 import MetaPixel from '@/components/MetaPixel';
@@ -10,9 +10,7 @@ import { PRICE, SESSION_TIMES, START_DATE } from './_landing/offer';
 import './globals.css';
 
 /**
- * Fraunces (display) does the headlines: a variable serif with real optical
- * sizing, which is what keeps a wellness page warm rather than clinical. It
- * never appears below headline size.
+ * Lora (display) does the headlines. It never appears below headline size.
  *
  * Manrope (body) does the reading at a 17px base, and the page's third voice,
  * the "spec" one that labels and credentials use, is tracked uppercase Manrope
@@ -21,10 +19,10 @@ import './globals.css';
  *
  * Both are variable families, so next/font takes NO weight array: it rejects
  * one for a variable family, and omitting it loads the whole wght axis in one
- * file per style. Fraunces italic is loaded because the founder pull-quote is
+ * file per style. The italic is loaded because the founder pull-quote is
  * set in a true display italic.
  */
-const fraunces = Fraunces({
+const display = Lora({
   subsets: ['latin'],
   style: ['normal', 'italic'],
   variable: '--font-display',
@@ -76,7 +74,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-IN" className={`${fraunces.variable} ${manrope.variable}`}>
+    <html lang="en-IN" className={`${display.variable} ${manrope.variable}`}>
       <body>
         {/* Marks the document as JS-capable BEFORE first paint, so the CSS
             scroll reveals only hide content when JS is there to reveal it.

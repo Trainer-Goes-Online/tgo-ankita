@@ -75,7 +75,7 @@ export default function StickyCta() {
       <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-3 px-4 py-3 sm:px-8">
         <div className="min-w-0">
           <p
-            className="truncate font-display text-[15px] font-semibold leading-tight sm:text-[16.5px]"
+            className="truncate font-display text-[15px] font-bold leading-tight sm:text-[16.5px]"
             style={{ color: C.ink }}
           >
             5-Day Fertility Reset

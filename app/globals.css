@@ -60,6 +60,8 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* The display face has one weight; a faked bold smears it. */
+  font-synthesis-weight: none;
 }
 
 body {
@@ -79,7 +81,7 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display), Georgia, serif;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.015em;
   margin: 0;
 }
@@ -628,6 +630,14 @@ button {
   filter: drop-shadow(0 2px 10px rgba(169, 139, 201, 0.42));
 }
 
+.kz-lit-hero {
+  background: none;
+  color: var(--navy-deep);
+  filter: none;
+  /* Lora stops at 700; a same-colour stroke takes it heavier. */
+  -webkit-text-stroke: 0.01em var(--navy-deep);
+}
+
 /* The bright twin, for CONTAINED DARK OBJECTS only (the sessions card, the
    Option 2 card). The stage is light, so nothing above the fold uses it: the
    deep steps are 2.5:1 on the deep fill and these are 1.5:1 on the canvas, and
@@ -907,7 +917,7 @@ body {
   margin-top: 2.5rem;
   font-family: var(--font-display), Georgia, serif;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.35;
   color: #2e2140;
 }
@@ -918,7 +928,7 @@ body {
   margin-top: 1.5rem;
   font-family: var(--font-display), Georgia, serif;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #2e2140;
 }
 .legal-content p { margin-top: 0.75rem; }

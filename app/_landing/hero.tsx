@@ -142,7 +142,7 @@ export function Hero() {
                 86 characters, so it is set at 10.5px with explicit leading and
                 a shrink-0 dot: it holds two lines on a phone and one from lg. */}
             <span
-              className="inline-flex items-center gap-2.5 rounded-full px-4 py-2 text-left text-[10.5px] font-bold uppercase leading-[1.5] tracking-[0.1em]"
+              className="inline-flex items-center justify-center gap-2.5 rounded-full px-4 py-2 text-center text-[10.5px] lg:justify-start lg:text-left font-bold uppercase leading-[1.5] tracking-[0.1em]"
               style={{
                 background: C.goldWash,
                 border: '1px solid rgba(169,139,201,0.45)',
@@ -162,23 +162,33 @@ export function Hero() {
               Pregnancy
             </span>
 
-            {/* Two tiers, because the source's second line is a separate
-                headline-register sentence rather than body copy. Every word and
-                the original order are intact; only the type size steps down.
-                ONE lit token, on the figure that carries the promise, and it
-                carries `.kz-lit` NOT `.kz-lit-dark`: the two are the same sweep
-                mixed for different grounds, and the bright one renders at about
-                2.0:1 here, a headline nobody can read that still reads as a lit
-                phrase to whoever shipped it. */}
+            {/* `.kz-lit`, not `.kz-lit-dark`: the dark-ground sweep renders at
+                about 2.0:1 on this light hero. */}
             <h1
-              className="mt-7 font-display text-[32px] font-semibold leading-[1.08] sm:text-[40px] lg:text-[48px]"
+              className="mt-7 font-display text-[32px] font-bold leading-[1.08] sm:text-[40px] lg:text-[48px]"
               style={{ color: C.ink }}
             >
-              Improve Your Body&rsquo;s Readiness for Natural Conception{' '}
-              <span className="kz-lit">in Just 5 Days</span>
-              <span className="mt-4 block text-[19px] font-medium leading-[1.3] sm:text-[22px] lg:text-[24px]">
-                Even if You Have PCOS, Thyroid, Endometriosis, Unexplained
-                Infertility or Failed IVF/IUI
+              <span className="kz-lit kz-lit-hero block whitespace-nowrap text-[9.5vw] font-bold leading-[1.05] tracking-[-0.02em] sm:text-[60px] lg:text-[52px] xl:text-[62px]">
+                Conceive Naturally.
+              </span>
+              <span
+                className="mt-4 block font-body text-[18px] font-medium leading-[2] sm:text-[20px] lg:text-[22px]"
+                style={{ color: C.inkSoft }}
+              >
+                Even if You Have{' '}
+                {['PCOS', 'Thyroid', 'Endometriosis', 'Unexplained Infertility', 'Failed IVF/IUI'].map(
+                  (c, i, all) => (
+                    <span key={c}>
+                      <strong
+                        className="whitespace-nowrap rounded-md px-2 py-0.5 font-bold"
+                        style={{ background: C.goldInk, color: '#FFFFFF' }}
+                      >
+                        {c}
+                      </strong>
+                      {i === all.length - 1 ? '' : i === all.length - 2 ? ' or ' : ', '}
+                    </span>
+                  ),
+                )}
               </span>
             </h1>
 
@@ -204,7 +214,7 @@ export function Hero() {
               className="mx-auto mt-6 max-w-[600px] text-[16px] leading-[1.7] lg:mx-0"
               style={{ color: C.inkSoft }}
             >
-              Experience five days of guided fertility-focused movement,
+              Experience 5 days of guided fertility-focused movement,
               breathing &amp; cycle-based practices designed to help you improve
               body awareness, understand your fertile window and prepare your
               body better for natural conception. Starts {START_DATE}, live on
@@ -321,7 +331,7 @@ export function Hero() {
               />
 
               <h2
-                className="font-display text-[26px] font-semibold leading-[1.16]"
+                className="font-display text-[26px] font-bold leading-[1.16]"
                 style={{ color: C.ink }}
               >
                 5-Day Fertility Reset Challenge
@@ -334,7 +344,7 @@ export function Hero() {
                 className="mt-6 flex items-baseline justify-center gap-3 border-t pt-6 lg:justify-start"
                 style={{ borderColor: C.line }}
               >
-                <span className="kz-lit font-display text-[46px] font-semibold leading-none">
+                <span className="kz-lit font-display text-[46px] font-bold leading-none">
                   {PRICE}
                 </span>
               </div>
@@ -447,7 +457,7 @@ function TrustLedger() {
             </span>
             <span className="leading-tight">
               <span
-                className="block font-display text-[18px] font-semibold"
+                className="block font-display text-[18px] font-bold"
                 style={{ color: C.ink }}
               >
                 {big}

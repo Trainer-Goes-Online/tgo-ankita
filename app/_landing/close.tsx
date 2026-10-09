@@ -239,7 +239,7 @@ function Mechanism() {
                 <p.icon weight="duotone" className="h-5 w-5" style={{ color: C.goldInk }} />
               </span>
               <span
-                className="font-display text-[18px] font-semibold leading-none"
+                className="font-display text-[18px] font-bold leading-none"
                 style={{ color: C.goldInk }}
               >
                 {p.n}
@@ -247,7 +247,7 @@ function Mechanism() {
             </span>
             <span className="min-w-0 flex-1">
               <span
-                className="block font-display text-[19px] font-semibold leading-snug"
+                className="block font-display text-[19px] font-bold leading-snug"
                 style={{ color: C.ink }}
               >
                 {p.title}
@@ -394,7 +394,7 @@ function TwoOptions() {
             OPTION 2
           </span>
           <p className="mt-5 text-[15px] leading-relaxed" style={{ color: C.onDark }}>
-            Take five days to understand your cycle, fertile window, body
+            Take 5 days to understand your cycle, fertile window, body
             readiness and the right fertility practices for each phase, so you
             can prepare for conception with more clarity and confidence.
           </p>
@@ -478,7 +478,7 @@ function Recap() {
         </div>
 
         <h2
-          className="text-center font-display text-[clamp(26px,3.6vw,40px)] font-semibold leading-[1.14]"
+          className="text-center font-display text-[clamp(26px,3.6vw,40px)] font-bold leading-[1.14]"
           style={{ color: C.ink, textWrap: 'balance' } as React.CSSProperties}
         >
           Recap of Everything{' '}
@@ -511,7 +511,7 @@ function Recap() {
                 </span>
               </span>
               <span
-                className="shrink-0 font-display text-[16px] font-semibold"
+                className="shrink-0 font-display text-[16px] font-bold"
                 style={{ color: C.inkSoft }}
               >
                 {inr(item.value)}
@@ -533,7 +533,7 @@ function Recap() {
             TOTAL VALUE
           </span>
           <span
-            className="kz-strike font-display text-[22px] font-semibold"
+            className="kz-strike font-display text-[22px] font-bold"
             style={{ color: C.inkSoft }}
           >
             {inr(INCLUDED_TOTAL)}
@@ -547,7 +547,7 @@ function Recap() {
           <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: C.goldInk }}>
             GET EVERYTHING TODAY FOR
           </p>
-          <p className="kz-price kz-lit mt-3 font-display text-[56px] font-semibold leading-none">
+          <p className="kz-price kz-lit mt-3 font-display text-[56px] font-bold leading-none">
             {PRICE}
           </p>
           <p className="mt-2 text-[13px]" style={{ color: C.inkSoft }}>

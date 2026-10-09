@@ -394,7 +394,7 @@ function ThankYou() {
               What to do <span style={{ color: C.goldDeep }}>before day one.</span>
             </h2>
             <p className="mt-3 text-[14.5px]" style={{ color: C.inkSoft }}>
-              To get the most out of the five days, please:
+              To get the most out of the 5 days, please:
             </p>
           </div>
 
