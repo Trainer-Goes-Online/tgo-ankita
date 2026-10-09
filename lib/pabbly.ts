@@ -6,7 +6,7 @@
  * invite, the joining details, the guide downloads, the row in a sheet.
  *
  * It is fired from the Razorpay webhook and nowhere else, for the same reason
- * the Purchase event is: the webhook is the only place a payment is proven, and
+ * the `sales` event is: the webhook is the only place a payment is proven, and
  * UPI buyers routinely never return to the confirmation page. A browser-side
  * hand-off would silently skip most Indian buyers.
  *

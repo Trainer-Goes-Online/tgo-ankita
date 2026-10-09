@@ -10,13 +10,13 @@ import {
 import { readClientIp, readClientUserAgent } from '@/lib/request-signals';
 
 /**
- * One route for the four pre-payment events: ViewContent, AddToCart,
- * InitiateCheckout and QualifiedLead.
+ * One route for the four pre-payment events: ViewContent, atc_event,
+ * itc_event and qc_event.
  *
  * Ankita uses a route per event. One route is fewer moving parts and the
  * payloads are identical apart from the name and the dedup key, but the
  * allow-list below is what keeps that from becoming a hole: only reviewed
- * names are accepted, and Purchase is explicitly NOT among them. Purchase is
+ * names are accepted, and `sales` is explicitly NOT among them. `sales` is
  * only ever sent by the Razorpay webhook, where the payment is proven.
  *
  * The client IP and user agent are read from THIS request's headers, which is
@@ -26,9 +26,9 @@ import { readClientIp, readClientUserAgent } from '@/lib/request-signals';
  */
 const ALLOWED: SendableEvent[] = [
   'ViewContent',
-  'AddToCart',
-  'InitiateCheckout',
-  'QualifiedLead',
+  'atc_event',
+  'itc_event',
+  'qc_event',
 ];
 
 /* The two answers the checkout offers. Validated against this list rather than
@@ -65,10 +65,10 @@ export async function POST(req: Request) {
     ? rawOccupation
     : undefined;
 
-  /* QualifiedLead means exactly one thing: a working professional reached the
+  /* qc_event means exactly one thing: a working professional reached the
      payment sheet. Firing it without that answer would dilute the audience it
      exists to build, so the route refuses rather than sending a vaguer event. */
-  if (eventName === 'QualifiedLead' && occupation !== 'working_professional') {
+  if (eventName === 'qc_event' && occupation !== 'working_professional') {
     return NextResponse.json(
       { ok: false, reason: 'not-qualified' },
       { status: 400 },

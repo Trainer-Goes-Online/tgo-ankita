@@ -14,14 +14,14 @@ import { readClientIp, readClientUserAgent, readRequestCookie } from '@/lib/requ
  * keeps a dependency (and its transitive tree) out of this project.
  *
  * THE NOTES ARE THE POINT. Everything Meta needs to match the eventual
- * Purchase to a person and a campaign is written into the order here, because
- * the webhook that fires Purchase receives only what Razorpay stores. Signals
+ * the sales event to a person and a campaign is written into the order here, because
+ * the webhook that fires `sales` receives only what Razorpay stores. Signals
  * not written now are gone by then: the buyer may complete inside a bank app
  * and never return to a page that could report them.
  *
  * This is ALSO the last request the buyer's own browser makes before the
  * payment sheet takes over, which makes it the only honest place to read their
- * IP and user agent. The webhook that fires Purchase is a request from
+ * IP and user agent. The webhook that fires `sales` is a request from
  * Razorpay, so reading those headers there would record Razorpay's server as
  * the buyer's device. See lib/request-signals.ts.
  *

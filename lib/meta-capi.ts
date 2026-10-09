@@ -3,36 +3,37 @@ import crypto from 'crypto';
 /**
  * Meta Conversions API primitives, shared by every server-side event route.
  *
- * Ported from ankita-postpartum with ONE deliberate change: this sends only
- * Meta's STANDARD event names. Ankita fires a custom `sales` event alongside
- * Purchase; that is dropped here. A custom event duplicating a standard one
- * adds no information and competes with it for Aggregated Event Measurement
- * priority on iOS, where standard names rank first.
+ * ── Health & wellness: CUSTOM EVENTS ONLY ────────────────────────────────
+ * This dataset carries Meta's "Health and wellness condition" restriction.
+ * Meta blocks the mid/lower-funnel STANDARD events (Purchase, AddToCart,
+ * InitiateCheckout, Lead, Subscribe) by name for such datasets, so none of
+ * them is sent. Each is replaced by a neutral, PHI-free custom event, and the
+ * campaigns optimise on the custom event directly (no Custom Conversion):
  *
- * ── Health & wellness classification hygiene ──────────────────────────────
- * Meta classifies a dataset into its restricted "Health and wellness
- * condition" category by reading a handful of surfaces, and a restriction,
- * once applied, binds at the root domain and is not cleanly reversible. This
- * offer sells against a body, so the intrinsic nature of the product is a
- * signal we cannot remove. Every signal we CAN remove is removed here, and
- * that means the two surfaces this file owns:
+ *     AddToCart         ->  atc_event
+ *     InitiateCheckout  ->  itc_event
+ *     QualifiedLead     ->  qc_event
+ *     Purchase          ->  sales
  *
- *   `custom_data`: value, currency and order_id ONLY. No `content_name`, no
- *   product string, no category, no UTM, no fbclid. custom_data is NOT hashed
- *   and IS read: a product name naming a condition, arriving on every event,
- *   is a plain-text declaration of that condition, and `utm_campaign` values
- *   are written by media buyers and drift toward symptom language with nobody
- *   reviewing them.
+ * ViewContent is upper-funnel and is not in the blocked set, so it stays.
+ * Never re-add a standard Purchase/AddToCart/InitiateCheckout/Lead here,
+ * browser or server: it re-triggers the restriction. See
+ * META_HEALTH_WELLNESS_RESTRICTION_SOP.md.
+ *
+ * Payload hygiene, the other half of the classification risk. A restriction,
+ * once applied, binds at the root domain and is not cleanly reversible, and
+ * this offer sells against a body. Every signal we CAN remove is removed, on
+ * the two surfaces this file owns:
+ *
+ *   `custom_data`: value, currency and order_id ONLY (plus the reviewed
+ *   occupation enum). No `content_name`, no product string, no category, no
+ *   UTM, no fbclid. custom_data is NOT hashed and IS read: a product name
+ *   naming a condition, arriving on every event, is a plain-text declaration
+ *   of that condition, and `utm_campaign` values drift toward symptom language
+ *   with nobody reviewing them.
  *
  *   `event_source_url`: reduced to the ORIGIN. A path naming the condition
  *   carries the same declaration in the same crawl.
- *
- * The standard event NAMES are deliberately kept. Coded custom events
- * (`evt_a`) are the belt-and-braces variant of this posture, but they forfeit
- * Aggregated Event Measurement priority, the built-in Purchase optimisation
- * and every standard-event prior in the ad account. The payload and the URL
- * are where the classification risk actually lives; the names are where the
- * performance lives. This keeps the performance and removes the risk.
  *
  * `user_data` is untouched and stays maximal: it is all SHA-256 hashed, it is
  * what EMQ is scored on, and it declares nothing about the offer.
@@ -62,29 +63,25 @@ export function originOnly(url: string): string {
   }
 }
 
-/** Meta's standard events. Nothing outside this union is sendable. */
-export type StandardEvent =
-  | 'ViewContent'
-  | 'AddToCart'
-  | 'InitiateCheckout'
-  | 'Purchase';
+/** Meta's standard events still sent. Only the upper-funnel ViewContent: the
+ *  restricted standard events are all replaced by custom ones below. */
+export type StandardEvent = 'ViewContent';
 
 /**
- * Custom events, kept to a closed union for the same reason the standard ones
- * are: a free-form string is how a health term eventually reaches Meta as an
- * event name, which is the surface that gets a dataset classified.
+ * Custom events, a closed union: a free-form string is how a health term
+ * eventually reaches Meta as an event name, which is the surface that gets a
+ * dataset classified. Adding a name is a review, not an edit.
  *
- * QualifiedLead fires at the same instant as InitiateCheckout, details valid,
- * payment sheet opening, but only for the occupation the client sells to. It
- * is a segment label on an existing step rather than a new funnel stage, and it
- * exists so the higher-intent half can be optimised toward and used as a
- * lookalike seed. The name carries no condition word, which is what keeps it
- * safe to add.
+ *   atc_event  checkout page arrival (was AddToCart)
+ *   itc_event  details valid, payment sheet opening (was InitiateCheckout)
+ *   qc_event   same instant as itc_event, but only for the occupation the
+ *              client sells to (was QualifiedLead); a segment label for
+ *              optimisation and lookalike seeding
+ *   sales      captured payment, webhook only (was Purchase)
  *
- * It costs one Aggregated Event Measurement slot on iOS, where standard events
- * rank above custom ones. That is the known price.
+ * None carries a condition word, which is what keeps them safe.
  */
-export type CustomEvent = 'QualifiedLead';
+export type CustomEvent = 'atc_event' | 'itc_event' | 'qc_event' | 'sales';
 
 export type SendableEvent = StandardEvent | CustomEvent;
 
@@ -182,7 +179,7 @@ export async function sendCapiEvent(params: {
   /* The working-professional / homemaker split. Typed, not free-form, see the
      Occupation union above. This is the one descriptive value that earns its
      place in custom_data: it is what the audience segmentation and the
-     QualifiedLead optimisation are built on, and neither of its two possible
+     qc_event optimisation are built on, and neither of its two possible
      values names a condition. */
   occupation?: Occupation;
   testEventCode?: string;

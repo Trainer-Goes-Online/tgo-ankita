@@ -16,14 +16,14 @@
  * sheet's handler moves them to /thank-you and the webhook proves the sale.
  *
  * Two consequences live in the code below:
- *   - InitiateCheckout fires immediately BEFORE the sheet opens, never on
- *     arrival. That is the moment intent is real. Arrival is AddToCart, in the
+ *   - itc_event fires immediately BEFORE the sheet opens, never on
+ *     arrival. That is the moment intent is real. Arrival is atc_event, in the
  *     effect above it.
  *   - the sheet's `ondismiss` resets the busy state, because a buyer who
  *     closes it is still on this page and must be able to try again.
  *
  * PURCHASE IS NOT FIRED HERE. The success handler only navigates. The webhook
- * owns Purchase, so a UPI payer who finishes inside their bank app and never
+ * owns `sales`, so a UPI payer who finishes inside their bank app and never
  * returns to this tab is still counted.
  */
 
@@ -135,8 +135,8 @@ export default function CheckoutPage() {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState('');
 
-  /* Arrival at the checkout. GA4 gets begin_checkout, Meta gets AddToCart.
-     Meta's InitiateCheckout deliberately does NOT fire here: it waits until the
+  /* Arrival at the checkout. GA4 gets begin_checkout, Meta gets atc_event.
+     Meta's itc_event deliberately does NOT fire here: it waits until the
      details are valid and the payment sheet actually opens, which is a far
      stronger buying signal than a page load and is what the ads optimise on.
 
@@ -182,7 +182,7 @@ export default function CheckoutPage() {
     if (!valid || busy) return;
     setBusy(true);
 
-    /* Meta InitiateCheckout + GA4 add_payment_info. Fired before the sheet
+    /* Meta itc_event (+ qc_event) + GA4 add_payment_info. Fired before the sheet
        opens rather than after payment, because this is the moment intent is
        real: details are valid and the buyer is committing.
 
@@ -269,7 +269,7 @@ export default function CheckoutPage() {
         },
         theme: { color: C.navyDeep },
         modal: { ondismiss: () => setBusy(false) },
-        /* Purchase is NOT fired here. The webhook owns it, so a UPI payer who
+        /* `sales` is NOT fired here. The webhook owns it, so a UPI payer who
            finishes in their bank app and never returns is still counted. This
            handler only moves the buyer on. */
         handler: (r: { razorpay_payment_id: string }) => {
