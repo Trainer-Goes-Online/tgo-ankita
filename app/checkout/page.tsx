@@ -28,22 +28,27 @@
  */
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import {
   CaretDown,
+  Check,
   CheckCircle,
   CreditCard,
+  HandPointing,
   Lock,
   ShieldCheck,
 } from '@phosphor-icons/react/dist/ssr';
 
 import { LEGAL } from '../_landing/legal';
 import {
+  CALL_BOOKING,
+  CALL_LINK_DELIVERY,
   CTA_NOTE,
   DISCOUNT_PCT,
   PRICE,
   PRICE_RUPEES,
+  RECORDINGS_DELIVERY,
   SESSION_TIMES_TZ,
   START_DATE,
   STRIKE_PRICE,
@@ -52,8 +57,18 @@ import {
 import { OfferCountdown } from '../_landing/countdown';
 import PaymentLogos from '@/components/PaymentLogos';
 import SiteFooter from '@/components/SiteFooter';
+import {
+  ADDONS,
+  ADDON_IDS,
+  THANK_YOU_PATH,
+  addonsTotal,
+  bundleKey,
+  orderLabel,
+  orderTotal,
+  parseBundle,
+  type AddonId,
+} from '@/lib/addons';
 import { collectSignals } from '@/lib/client-signals';
-import { PRODUCT_LABEL } from '@/lib/product-label';
 import {
   trackAddToCart,
   trackBeginCheckout,
@@ -121,6 +136,59 @@ const OCCUPATIONS = [
   { value: 'homemaker', label: 'Homemaker' },
 ];
 
+/* ⚠️ HOUSE COPY for the two add-on cards: COPY-SOURCE.md has no add-ons. The
+   prices and the two delivery lines come from offer.ts; everything else here
+   needs Ankita's read before launch. Nothing may promise an outcome. */
+type AddonCardCopy = {
+  id: AddonId;
+  pill: string;
+  pillShort: string;
+  tone: 'rose' | 'ink';
+  title: string;
+  /** The one-line label on the phone's docked bar. */
+  short: string;
+  body: string;
+  bullets: string[];
+  note?: string;
+};
+
+const ADDON_CARDS: AddonCardCopy[] = [
+  {
+    id: 'recording',
+    pill: 'Recommended',
+    pillShort: 'Recommended',
+    tone: 'rose',
+    title: 'Recordings of all 5 live sessions',
+    short: 'Add session recordings',
+    body: 'Join live, then keep every session. Practise again at your own pace, whenever your day allows.',
+    bullets: [
+      'Full recordings of Day 1 to Day 5',
+      'Catch up on any session you could not attend live',
+      'Repeat the practices at your own pace, as often as you like',
+      `Shared in a private recordings WhatsApp group ${RECORDINGS_DELIVERY}`,
+      `Your live seat is still included in the ${PRICE}`,
+    ],
+  },
+  {
+    id: 'call',
+    pill: 'One-on-one',
+    pillShort: '1-on-1',
+    tone: 'ink',
+    title: 'Private 1-on-1 call with Ankita',
+    short: 'Add 1-on-1 call with Ankita',
+    body: 'Ankita looks at your starting point personally: your cycle, your routine and what you have already tried, and tells you what to focus on next.',
+    bullets: [
+      'A private call with Ankita, not a group session',
+      'Talk through your cycle, routine and what you have tried so far',
+      'Leave with a personalised next-step practice plan',
+      'Ask your questions directly, with no waiting',
+      CALL_BOOKING,
+      CALL_LINK_DELIVERY,
+    ],
+    note: 'A wellness guidance call, not a medical consultation.',
+  },
+];
+
 type Fields = {
   firstName: string;
   lastName: string;
@@ -144,6 +212,15 @@ export default function CheckoutPage() {
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState('');
+
+  /* Ids only. The amount is always derived, here for display and again on the
+     server for the charge, from the same function. */
+  const [addons, setAddons] = useState<AddonId[]>([]);
+  const toggleAddon = (id: AddonId) =>
+    setAddons((list) =>
+      ADDON_IDS.filter((x) => (x === id ? !list.includes(x) : list.includes(x))),
+    );
+  const total = orderTotal(addons);
 
   /* Arrival at the checkout. GA4 gets begin_checkout, Meta gets atc_event.
      Meta's itc_event deliberately does NOT fire here: it waits until the
@@ -211,7 +288,7 @@ export default function CheckoutPage() {
       city: f.city.trim(),
       country: f.country,
       occupation: f.occupation,
-    });
+    }, addons);
 
     try {
       const sdk = await loadRazorpay();
@@ -233,6 +310,8 @@ export default function CheckoutPage() {
           city: f.city.trim(),
           country: f.country,
           occupation: f.occupation,
+          /* Ids, not prices: create-order prices them itself. */
+          addons,
           ...collectSignals(),
         }),
       });
@@ -276,7 +355,7 @@ export default function CheckoutPage() {
 
            Until then the sheet falls back to the logo uploaded in the Razorpay
            dashboard, which is where the client should put one anyway. */
-        description: PRODUCT_LABEL,
+        description: orderLabel(addons),
         prefill: {
           name: `${f.firstName.trim()} ${f.lastName.trim()}`.trim(),
           email: f.email.trim(),
@@ -288,7 +367,11 @@ export default function CheckoutPage() {
            finishes in their bank app and never returns is still counted. This
            handler only moves the buyer on. */
         handler: (r: { razorpay_payment_id: string }) => {
-          window.location.href = `/thank-you?p=${encodeURIComponent(r.razorpay_payment_id)}`;
+          /* Each bundle has its own confirmation page, with the steps that
+             bundle needs (community, recordings group, call booking). The
+             server's bundle wins over local state, in case the two differ. */
+          const k = parseBundle(order.bundle ?? bundleKey(addons));
+          window.location.href = `${THANK_YOU_PATH[bundleKey(k)]}?p=${encodeURIComponent(r.razorpay_payment_id)}`;
         },
       });
       rzp.open();
@@ -400,37 +483,36 @@ export default function CheckoutPage() {
                     buyer types, so the number that reaches Meta and Razorpay is
                     always a clean E.164 and the country arrives as an ISO-2 we
                     can hash. */}
-                <label className="block">
+                {/* A div, not a <label>: a label wrapping the dial-code button
+                    would open the dropdown whenever its text is tapped. The
+                    number input is tied to the heading by aria-labelledby. */}
+                <div className="block">
                   <span
+                    id="wa-label"
                     className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.16em]"
                     style={{ color: C.inkSoft }}
                   >
                     WhatsApp number
                   </span>
                   <div className="flex gap-2">
-                    <select
-                      className="w-[124px] shrink-0 rounded-xl px-3 py-3 text-[15px] outline-none"
-                      autoComplete="tel-country-code"
-                      aria-label="Country dialling code"
+                    <ThemedSelect
+                      className="w-[118px] shrink-0"
+                      menuClassName="w-[240px]"
+                      ariaLabel="Country dialling code"
                       value={f.country}
-                      onChange={(e) => setF((s) => ({ ...s, country: e.target.value }))}
-                      style={{
-                        background: C.canvasAlt,
-                        color: C.ink,
-                        border: `1px solid ${C.line}`,
-                      }}
-                    >
-                      {COUNTRIES.map((c) => (
-                        <option key={c.iso} value={c.iso}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(x) => setF((s) => ({ ...s, country: x }))}
+                      options={COUNTRIES.map((c) => ({
+                        value: c.iso,
+                        label: c.label,
+                        short: `${c.iso.toUpperCase()} ${c.dial}`,
+                      }))}
+                    />
                     <input
                       className="w-full rounded-xl px-4 py-3 text-[15px] outline-none"
                       type="tel"
                       inputMode="numeric"
                       autoComplete="tel-national"
+                      aria-labelledby="wa-label"
                       placeholder="98XXX XXXXX"
                       value={f.phone}
                       onChange={(e) => setF((s) => ({ ...s, phone: e.target.value }))}
@@ -445,36 +527,49 @@ export default function CheckoutPage() {
                   <span className="mt-1.5 block text-[11.5px]" style={{ color: C.inkSoft }}>
                     Your session reminders go here.
                   </span>
-                </label>
+                </div>
 
-                <label className="block">
+                <div className="block">
                   <span
+                    id="occupation-label"
                     className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-[0.16em]"
                     style={{ color: C.inkSoft }}
                   >
                     Are you a working professional or a homemaker?
                   </span>
-                  <select
-                    className="w-full rounded-xl px-4 py-3 text-[15px] outline-none"
+                  <ThemedSelect
+                    className="w-full"
+                    menuClassName="w-full"
+                    labelledBy="occupation-label"
+                    placeholder="Select one"
                     value={f.occupation}
-                    onChange={(e) => setF((s) => ({ ...s, occupation: e.target.value }))}
-                    aria-invalid={(touched && !v.occupation) || undefined}
-                    style={{
-                      background: C.canvasAlt,
-                      color: f.occupation ? C.ink : C.inkSoft,
-                      border: `1px solid ${touched && !v.occupation ? C.coralInk : C.line}`,
-                    }}
-                  >
-                    <option value="" disabled>
-                      Select one
-                    </option>
-                    {OCCUPATIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    onChange={(x) => setF((s) => ({ ...s, occupation: x }))}
+                    invalid={touched && !v.occupation}
+                    options={OCCUPATIONS}
+                  />
+                </div>
+              </div>
+
+              {/* The two add-ons, between the details and the pay button: the
+                  last thing read before paying, and never in the way of the
+                  fields. Unticked cards breathe; a ticked one goes still. */}
+              <div className="mt-7">
+                <p
+                  className="text-[10.5px] font-bold uppercase tracking-[0.2em]"
+                  style={{ color: C.goldInk }}
+                >
+                  Make the most of your 5 days
+                </p>
+                <div className="mt-3 flex flex-col gap-4">
+                  {ADDON_CARDS.map((card) => (
+                    <AddonCard
+                      key={card.id}
+                      card={card}
+                      on={addons.includes(card.id)}
+                      onToggle={() => toggleAddon(card.id)}
+                    />
+                  ))}
+                </div>
               </div>
 
               {touched && !valid && (
@@ -516,8 +611,19 @@ export default function CheckoutPage() {
                     <span className="flex flex-col items-center leading-tight">
                       <span>Book My Spot - {DISCOUNT_PCT}% Off Today</span>
                       <span className="mt-1 text-[14px] font-semibold tabular-nums">
-                        <s className="mr-1.5 opacity-75 decoration-2">{STRIKE_PRICE}</s>
-                        {PRICE}
+                        {addons.length === 0 ? (
+                          <>
+                            <s className="mr-1.5 opacity-75 decoration-2">{STRIKE_PRICE}</s>
+                            {PRICE}
+                          </>
+                        ) : (
+                          <>
+                            Total{' '}
+                            <span key={total} className="addon-pop">
+                              {inr(total)}
+                            </span>
+                          </>
+                        )}
                       </span>
                     </span>
                   )}
@@ -582,7 +688,7 @@ export default function CheckoutPage() {
 
             {/* Phones see what they are paying for before the form. */}
             <div className="order-first lg:order-none lg:sticky lg:top-8">
-              <OrderSummary />
+              <OrderSummary addons={addons} />
             </div>
           </div>
         </div>
@@ -590,60 +696,289 @@ export default function CheckoutPage() {
 
       <SiteFooter />
 
-      {/* Phones only: room for the docked bar, then the bar itself. */}
-      <div aria-hidden className="lg:hidden" style={{ height: 'calc(108px + env(safe-area-inset-bottom))' }} />
+      {/* Phones only: room for the docked bar, then the bar itself. The bar
+          carries both add-ons as one-tap rows, so a buyer who scrolled past
+          the cards can still add one without scrolling back. The countdown
+          strip that used to top it moved out: three rows and a button is
+          already the most a phone's thumb zone should hold. */}
+      <div aria-hidden className="lg:hidden" style={{ height: 'calc(204px + env(safe-area-inset-bottom))' }} />
       <div
-        className="fixed inset-x-0 bottom-0 z-50 lg:hidden"
+        className="addon-dock-in fixed inset-x-0 bottom-0 z-50 lg:hidden"
         style={{
-          background: C.surface,
+          background: 'rgba(255, 247, 249, 0.97)',
           borderTop: `1px solid ${C.lineStrong}`,
-          boxShadow: '0 -6px 24px rgba(31, 16, 20, 0.14)',
+          boxShadow: '0 -10px 30px -8px rgba(31, 16, 20, 0.18)',
           paddingBottom: 'env(safe-area-inset-bottom)',
+          backdropFilter: 'blur(8px)',
         }}
       >
-        <p
-          className="px-4 py-1.5 text-center text-[12px] font-semibold"
-          style={{ background: C.goldInk, color: '#FFFFFF' }}
-        >
-          Offer ends in <OfferCountdown inline />
-        </p>
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5">
-          <div className="shrink-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em]" style={{ color: C.inkSoft }}>
-              Total
-            </p>
-            <p className="font-display text-[20px] font-bold leading-tight tabular-nums" style={{ color: C.ink }}>
-              {PRICE}
-            </p>
-            <s className="block text-[12px] font-semibold leading-none decoration-2" style={{ color: C.inkSoft }}>
-              {STRIKE_PRICE}
-            </s>
-          </div>
+        <div className="mx-auto flex max-w-xl flex-col gap-1.5 px-3 pt-2.5">
+          {ADDON_CARDS.map((card) => (
+            <DockAddonRow
+              key={card.id}
+              card={card}
+              on={addons.includes(card.id)}
+              onToggle={() => toggleAddon(card.id)}
+            />
+          ))}
+        </div>
+        <div className="mx-auto max-w-xl px-3 pb-2 pt-2">
           <button
             type="submit"
             form="checkout-form"
             disabled={busy}
-            className="lego-press inline-flex min-h-[52px] flex-1 items-center justify-center rounded-full px-3 text-center text-[15px] font-bold leading-tight disabled:opacity-60"
-            style={{ background: C.ctaFill, color: C.onAccent, boxShadow: C.ctaGlow }}
+            className="lego-press cta-shimmer inline-flex min-h-[52px] w-full items-center justify-center rounded-full px-4 text-center text-[15.5px] font-bold leading-tight disabled:opacity-60"
+            style={{
+              background: C.ctaFill,
+              color: C.onAccent,
+              boxShadow: C.ctaGlow,
+              ['--shimmer' as string]: 'rgba(255,255,255,0.55)',
+            }}
           >
-            {busy ? 'Opening…' : `Book My Spot - ${DISCOUNT_PCT}% Off Today`}
+            <span>
+              {busy ? (
+                'Opening…'
+              ) : (
+                <>
+                  Book My Spot ·{' '}
+                  <span key={total} className="addon-pop tabular-nums">
+                    {inr(total)}
+                  </span>
+                </>
+              )}
+            </span>
           </button>
+          <p
+            className="mt-1.5 text-center text-[11px] font-semibold"
+            style={{ color: C.emeraldInk }}
+          >
+            {CTA_NOTE} · Offer ends in <OfferCountdown inline />
+          </p>
         </div>
       </div>
     </main>
   );
 }
 
+/* ── One add-on, as a full card in the form. A div with checkbox semantics
+      rather than a <button>: the card holds a list, and a list is not valid
+      inside a button. Space and Enter toggle it, as a checkbox would. ──── */
+function AddonCard({
+  card,
+  on,
+  onToggle,
+}: {
+  card: AddonCardCopy;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  const price = ADDONS[card.id].price;
+  return (
+    <div
+      role="checkbox"
+      aria-checked={on}
+      aria-label={`${card.title}, add for ${inr(price)}`}
+      tabIndex={0}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      className={`relative cursor-pointer rounded-2xl p-4 text-left outline-none transition-colors duration-200 focus-visible:ring-2 sm:p-5 ${
+        on ? '' : 'addon-pulse'
+      }`}
+      style={{
+        background: on ? C.goldWash : '#FFFBFC',
+        border: `2px ${on ? 'solid' : 'dashed'} ${on ? C.goldDeep : C.goldMid}`,
+        ['--tw-ring-color' as string]: C.goldDeep,
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <TickBox on={on} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+            <AddonPill label={card.pill} tone={card.tone} />
+            <span
+              className="font-display text-[15px] font-extrabold tabular-nums sm:text-[16px]"
+              style={{ color: C.goldDeep }}
+            >
+              + {inr(price)}
+            </span>
+          </div>
+          <p
+            className="mt-2 font-display text-[15.5px] font-extrabold leading-snug sm:text-[16.5px]"
+            style={{ color: C.ink }}
+          >
+            {card.title}
+          </p>
+          <p className="mt-1 text-[12.5px] leading-relaxed sm:text-[13px]" style={{ color: C.inkSoft }}>
+            {card.body}
+          </p>
+          <ul className="mt-2.5 space-y-1.5">
+            {card.bullets.map((b) => (
+              <li
+                key={b}
+                className="flex items-start gap-2 text-[12.5px] leading-snug sm:text-[13px]"
+                style={{ color: C.inkSoft }}
+              >
+                <Check
+                  weight="bold"
+                  aria-hidden
+                  className="mt-[2px] h-3.5 w-3.5 shrink-0"
+                  style={{ color: C.emeraldInk }}
+                />
+                {b}
+              </li>
+            ))}
+          </ul>
+          {card.note && (
+            <p className="mt-2 text-[11px] italic" style={{ color: C.inkMuted }}>
+              {card.note}
+            </p>
+          )}
+          <p
+            className="mt-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.14em]"
+            style={{ color: on ? C.emeraldInk : C.coralInk }}
+          >
+            {on ? (
+              <>
+                <CheckCircle weight="fill" aria-hidden className="h-4 w-4" />
+                Added to your order · tap to remove
+              </>
+            ) : (
+              <>
+                <span aria-hidden className="addon-nudge">
+                  <HandPointing weight="fill" className="h-4 w-4 rotate-90" />
+                </span>
+                Tap to add for {inr(price)} more
+              </>
+            )}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── The same add-on as one compact row on the phone's docked bar. ─────── */
+function DockAddonRow({
+  card,
+  on,
+  onToggle,
+}: {
+  card: AddonCardCopy;
+  on: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      role="checkbox"
+      aria-checked={on}
+      aria-label={`${card.short}, ${inr(ADDONS[card.id].price)}`}
+      tabIndex={0}
+      onClick={onToggle}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          onToggle();
+        }
+      }}
+      className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl px-2.5 py-1.5 outline-none transition-colors duration-200 ${
+        on ? '' : 'addon-pulse'
+      }`}
+      style={{
+        background: on ? C.goldWash : '#FFFBFC',
+        border: `1.5px ${on ? 'solid' : 'dashed'} ${on ? C.goldDeep : C.goldMid}`,
+      }}
+    >
+      <TickBox on={on} small />
+      <AddonPill label={card.pillShort} tone={card.tone} small />
+      <span
+        className="min-w-0 flex-1 truncate text-[12.5px] font-semibold"
+        style={{ color: C.ink }}
+      >
+        {card.short}
+      </span>
+      <span
+        className="shrink-0 font-display text-[13px] font-extrabold tabular-nums"
+        style={{ color: C.goldDeep }}
+      >
+        +{inr(ADDONS[card.id].price)}
+      </span>
+    </div>
+  );
+}
+
+function TickBox({ on, small = false }: { on: boolean; small?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`grid shrink-0 place-items-center rounded-md transition-colors duration-200 ${
+        small ? 'h-5 w-5' : 'mt-0.5 h-6 w-6'
+      }`}
+      style={{
+        background: on ? C.goldDeep : C.surface,
+        border: `2px solid ${on ? C.goldDeep : C.goldMid}`,
+      }}
+    >
+      {on && (
+        <Check
+          weight="bold"
+          className={`addon-tick ${small ? 'h-3 w-3' : 'h-3.5 w-3.5'}`}
+          style={{ color: '#FFFFFF' }}
+        />
+      )}
+    </span>
+  );
+}
+
+/* The pill with the live dot, the same pulse the section eyebrows use. */
+function AddonPill({
+  label,
+  tone,
+  small = false,
+}: {
+  label: string;
+  tone: 'rose' | 'ink';
+  small?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full font-bold uppercase ${
+        small ? 'px-2 py-0.5 text-[8.5px] tracking-[0.1em]' : 'px-2.5 py-1 text-[9.5px] tracking-[0.14em]'
+      }`}
+      style={{ background: tone === 'rose' ? C.coralInk : C.ink, color: '#FFFFFF' }}
+    >
+      <span
+        aria-hidden
+        className="lego-pulse-dot inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+        style={{
+          background: tone === 'rose' ? '#FFFFFF' : C.coral,
+          ['--dot-pulse' as string]:
+            tone === 'rose' ? 'rgba(255,255,255,0.75)' : 'rgba(255, 110, 136, 0.7)',
+        }}
+      />
+      {label}
+    </span>
+  );
+}
+
 /* ── Order summary, in the house-standard order: lead item, included list,
       subtotal / bonus value, the ruled Total, the method tile, then the
       guarantee line. Accordion below lg, always open from lg up. ───────── */
-function OrderSummary() {
+function OrderSummary({ addons }: { addons: AddonId[] }) {
   const [open, setOpen] = useState(false);
   const [lead, ...bonuses] = RECAP;
   /* The challenge is priced at the strike price here, not its recap value, and
      the discount is whatever brings the full stack down to PRICE. */
   const totalPrice = STRIKE_PRICE_RUPEES + (VALUE_TOTAL - lead.value);
   const launchDiscount = totalPrice - PRICE_RUPEES;
+  /* Add-ons are sold at their own price with no discount, so they add to both
+     sides of the strike evenly and the launch discount stays what it was. */
+  const extra = addonsTotal(addons);
+  const total = orderTotal(addons);
 
   return (
     <div
@@ -674,11 +1009,26 @@ function OrderSummary() {
             {open ? 'Tap to hide details' : 'Tap to view what is included'}
           </span>
         </span>
-        <CaretDown
-          weight="bold"
-          className={`h-4 w-4 shrink-0 transition-transform lg:hidden ${open ? 'rotate-180' : ''}`}
-          style={{ color: C.inkSoft }}
-        />
+        <span className="flex shrink-0 items-center gap-2 lg:hidden">
+          {/* The live total, readable without opening the accordion. */}
+          <span
+            key={total}
+            className="addon-pop font-display text-[17px] font-extrabold tabular-nums"
+            style={{ color: C.goldDeep }}
+          >
+            {inr(total)}
+          </span>
+          <span
+            className="grid h-7 w-7 place-items-center rounded-full"
+            style={{ background: C.goldWash }}
+          >
+            <CaretDown
+              weight="bold"
+              className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`}
+              style={{ color: C.goldInk }}
+            />
+          </span>
+        </span>
       </button>
 
       {/* Lead item, always visible: it is the thing being bought. */}
@@ -716,6 +1066,37 @@ function OrderSummary() {
         </div>
       </div>
 
+      {/* Ticked add-ons, outside the accordion so a phone always sees what
+          the total is made of. */}
+      {addons.map((id) => (
+        <div
+          key={id}
+          className="mt-2.5 flex items-center gap-3 rounded-2xl p-3"
+          style={{ background: C.goldWash, border: `1px solid ${C.lineStrong}` }}
+        >
+          <span
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl"
+            style={{ background: C.surface, border: `1px solid ${C.line}` }}
+          >
+            <Check weight="bold" className="addon-tick h-4 w-4" style={{ color: C.goldDeep }} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold leading-snug" style={{ color: C.ink }}>
+              {ADDONS[id].label}
+            </p>
+            <p className="mt-0.5 text-[10.5px] font-bold uppercase tracking-[0.12em]" style={{ color: C.goldInk }}>
+              Add-on
+            </p>
+          </div>
+          <div
+            className="shrink-0 font-display text-[14px] font-extrabold tabular-nums"
+            style={{ color: C.ink }}
+          >
+            + {inr(ADDONS[id].price)}
+          </div>
+        </div>
+      ))}
+
       <div id="order-summary-details" className={`${open ? 'block' : 'hidden'} lg:block`}>
         <div className="mt-4 space-y-1.5">
           <p
@@ -750,6 +1131,12 @@ function OrderSummary() {
             <span>Launch Discount</span>
             <span className="tabular-nums">−{inr(launchDiscount)}</span>
           </div>
+          {extra > 0 && (
+            <div className="flex justify-between" style={{ color: C.inkSoft }}>
+              <span>Add-ons</span>
+              <span className="tabular-nums">+{inr(extra)}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -765,20 +1152,21 @@ function OrderSummary() {
             className="font-display text-[13px] font-bold uppercase tracking-[0.12em] sm:text-[14px] sm:tracking-[0.14em]"
             style={{ color: C.ink }}
           >
-            Today&rsquo;s Offer Price
+            {extra > 0 ? 'Total Today' : <>Today&rsquo;s Offer Price</>}
           </span>
           <div className="flex items-baseline gap-2 text-right">
             <s
               className="text-[15px] font-semibold tabular-nums decoration-2 sm:text-[17px]"
               style={{ color: C.inkSoft }}
             >
-              {inr(totalPrice)}
+              {inr(totalPrice + extra)}
             </s>
             <span
-              className="font-display text-[26px] font-extrabold leading-none tabular-nums sm:text-[32px]"
+              key={total}
+              className="addon-pop font-display text-[26px] font-extrabold leading-none tabular-nums sm:text-[32px]"
               style={{ color: C.goldDeep }}
             >
-              {PRICE}
+              {inr(total)}
             </span>
           </div>
         </div>
@@ -862,6 +1250,205 @@ function Field({
         </span>
       )}
     </label>
+  );
+}
+
+/* ── A dropdown in the page's own skin. A native <select> hands its open list
+      to the operating system, which draws it grey and square whatever the CSS
+      says, so this is a button plus a listbox instead. The VALUES are the same
+      strings the selects carried, so nothing downstream changes.
+
+      Keyboard: Enter, Space or ArrowDown opens; arrows move; Enter picks;
+      Escape or Tab closes; typing a letter jumps to the first match. ────── */
+type SelectOption = { value: string; label: string; short?: string };
+
+function ThemedSelect({
+  value,
+  options,
+  onChange,
+  placeholder,
+  ariaLabel,
+  labelledBy,
+  invalid = false,
+  className = '',
+  menuClassName = '',
+}: {
+  value: string;
+  options: SelectOption[];
+  onChange: (v: string) => void;
+  placeholder?: string;
+  ariaLabel?: string;
+  labelledBy?: string;
+  invalid?: boolean;
+  className?: string;
+  menuClassName?: string;
+}) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const root = useRef<HTMLDivElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+
+  const selected = options.find((o) => o.value === value);
+  const optId = (i: number) => `${id}-opt-${i}`;
+
+  const openMenu = () => {
+    setActive(Math.max(0, options.findIndex((o) => o.value === value)));
+    setOpen(true);
+  };
+  const close = (refocus = true) => {
+    setOpen(false);
+    if (refocus) button.current?.focus();
+  };
+  const pick = (i: number) => {
+    onChange(options[i].value);
+    close();
+  };
+
+  /* Focus moves to the list while it is open, so the arrows drive it, and the
+     list is brought into view. Its scroll-margin keeps it clear of the docked
+     add-on bar on a phone, which would otherwise sit over the options. */
+  useEffect(() => {
+    if (!open) return;
+    list.current?.focus({ preventScroll: true });
+    list.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [open]);
+
+  /* Keep the highlighted option in view in a list that scrolls. */
+  useEffect(() => {
+    if (open) document.getElementById(optId(active))?.scrollIntoView({ block: 'nearest' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, active]);
+
+  /* A tap anywhere else closes it, without stealing focus from what was tapped. */
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => {
+      if (!root.current?.contains(e.target as Node)) close(false);
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [open]);
+
+  const onListKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive((i) => Math.min(options.length - 1, i + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive((i) => Math.max(0, i - 1));
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setActive(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setActive(options.length - 1);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      pick(active);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+    } else if (e.key === 'Tab') {
+      close(false);
+    } else if (e.key.length === 1) {
+      const i = options.findIndex((o) => o.label.toLowerCase().startsWith(e.key.toLowerCase()));
+      if (i >= 0) setActive(i);
+    }
+  };
+
+  const border = open ? C.goldDeep : invalid ? C.coralInk : C.line;
+
+  return (
+    <div ref={root} className={`relative ${className}`}>
+      <button
+        ref={button}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={`${id}-list`}
+        aria-label={ariaLabel}
+        aria-labelledby={labelledBy ? `${labelledBy} ${id}-value` : undefined}
+        onClick={() => (open ? close() : openMenu())}
+        onKeyDown={(e) => {
+          if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(e.key)) {
+            e.preventDefault();
+            openMenu();
+          }
+        }}
+        className="flex w-full items-center justify-between gap-2 rounded-xl py-3 pl-3.5 pr-2.5 text-left text-[15px] outline-none transition-[border-color,box-shadow] duration-200"
+        style={{
+          background: open ? C.surface : C.canvasAlt,
+          color: selected ? C.ink : C.inkSoft,
+          border: `1px solid ${border}`,
+          boxShadow: open ? `0 0 0 3px ${C.goldWash}` : 'none',
+        }}
+      >
+        <span id={`${id}-value`} className="min-w-0 truncate font-medium">
+          {selected ? (selected.short ?? selected.label) : placeholder}
+        </span>
+        <span
+          aria-hidden
+          className="grid h-6 w-6 shrink-0 place-items-center rounded-full"
+          style={{ background: C.goldWash }}
+        >
+          <CaretDown
+            weight="bold"
+            className={`h-3 w-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+            style={{ color: C.goldInk }}
+          />
+        </span>
+      </button>
+
+      {open && (
+        <ul
+          ref={list}
+          id={`${id}-list`}
+          role="listbox"
+          tabIndex={-1}
+          aria-label={ariaLabel}
+          aria-labelledby={labelledBy}
+          aria-activedescendant={optId(active)}
+          onKeyDown={onListKey}
+          className={`select-pop absolute left-0 top-full z-40 mt-2 max-h-64 scroll-mb-[230px] overflow-auto rounded-2xl p-1.5 lg:scroll-mb-6 ${menuClassName}`}
+          style={{
+            /* The page's global :focus-visible ring would draw a second edge
+               round the menu; the highlighted option already shows focus. */
+            outline: 'none',
+            background: C.surface,
+            border: `1px solid ${C.lineStrong}`,
+            boxShadow: '0 22px 44px -18px rgba(199, 58, 87, 0.38), 0 4px 12px -6px rgba(31, 16, 20, 0.12)',
+          }}
+        >
+          {options.map((o, i) => {
+            const isSel = o.value === value;
+            const isActive = i === active;
+            return (
+              <li
+                key={o.value}
+                id={optId(i)}
+                role="option"
+                aria-selected={isSel}
+                onPointerEnter={() => setActive(i)}
+                onClick={() => pick(i)}
+                className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-[14.5px] transition-colors duration-150"
+                style={{
+                  background: isActive ? C.goldWash : 'transparent',
+                  color: isSel ? C.goldInk : C.ink,
+                  fontWeight: isSel ? 700 : 500,
+                }}
+              >
+                <span className="min-w-0 truncate">{o.label}</span>
+                {isSel && (
+                  <Check weight="bold" aria-hidden className="h-4 w-4 shrink-0" style={{ color: C.goldDeep }} />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 

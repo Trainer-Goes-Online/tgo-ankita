@@ -24,6 +24,17 @@
  * what makes it possible to rebuild, replay or reconcile a Meta event later
  * from the sheet, without which a mis-sent conversion is unrecoverable.
  */
+import {
+  CALL_BOOKING_URL,
+  PRICE_RUPEES,
+  RECORDINGS_INVITE,
+  SESSION_TIMES_TZ,
+  START_DATE,
+  WHATSAPP_INVITE,
+} from '@/app/_landing/offer';
+import { ADDONS, type AddonId, type BundleKey } from '@/lib/addons';
+import { PRODUCT_LABEL } from '@/lib/product-label';
+
 export const pabblyReady = () => Boolean(process.env.PABBLY_WEBHOOK_URL);
 
 export type PabblyPurchase = {
@@ -61,6 +72,9 @@ export type PabblyPurchase = {
   currency: string;
   product: string;
   occupation: string;
+  /** "base" | "base_recording" | "base_call" | "base_recording_call" */
+  bundle: BundleKey;
+  addons: AddonId[];
 };
 
 /* Every key is emitted on every call, empty string where unknown. Pabbly
@@ -133,6 +147,29 @@ export async function sendPabblyPurchase(
         currency: s(p.currency),
         product: s(p.product),
         occupation: s(p.occupation),
+
+        /* ── WHAT WAS BOUGHT, for the Pabbly router (add-ons, 2026-10) ────
+           `bundle` is the one key to branch on: four fixed strings, one per
+           confirmation email and WhatsApp template. The booleans are there
+           for a workflow that would rather filter than switch, and the
+           amounts split `amount` back into its lines for the sheet. */
+        bundle: p.bundle,
+        has_recording: p.addons.includes('recording'),
+        has_private_call: p.addons.includes('call'),
+        base_product: PRODUCT_LABEL,
+        base_amount: PRICE_RUPEES,
+        recording_amount: p.addons.includes('recording') ? ADDONS.recording.price : 0,
+        private_call_amount: p.addons.includes('call') ? ADDONS.call.price : 0,
+        addons: p.addons.map((id) => ADDONS[id].label).join(' + '),
+        /* Batch details, so the message templates read them from the payload
+           instead of hard-coding a date that goes stale with the next batch. */
+        start_date: START_DATE,
+        session_times: SESSION_TIMES_TZ,
+        community_link: WHATSAPP_INVITE,
+        /* Sent on every payload, empty for a buyer without that add-on, so
+           the field exists in Pabbly's mapper from the very first test. */
+        recordings_group_link: p.addons.includes('recording') ? RECORDINGS_INVITE : '',
+        call_booking_link: p.addons.includes('call') ? CALL_BOOKING_URL : '',
       }),
     });
     return { ok: res.ok, status: res.status };

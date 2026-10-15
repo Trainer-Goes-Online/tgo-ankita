@@ -1,6 +1,7 @@
 'use client';
 
 import { PRICE_RUPEES } from '@/app/_landing/offer';
+import { ADDONS, cleanAddons, orderTotal, type AddonId } from '@/lib/addons';
 import { collectSignals } from '@/lib/client-signals';
 import type { SendableEvent } from '@/lib/meta-capi';
 import { PRODUCT_LABEL } from '@/lib/product-label';
@@ -37,6 +38,22 @@ const ITEM: Ga4Item = {
   quantity: 1,
 };
 const money = { value: VALUE, currency: 'INR', items: [ITEM] };
+
+/* The cart once add-ons are ticked: the challenge plus one line per add-on, so
+   GA4's item report splits revenue the way Pabbly does. */
+const cart = (addons: AddonId[]) => ({
+  value: orderTotal(addons),
+  currency: 'INR',
+  items: [
+    ITEM,
+    ...cleanAddons(addons).map((id) => ({
+      item_id: `bwy-addon-${ADDONS[id].sku}`,
+      item_name: ADDONS[id].label,
+      price: ADDONS[id].price,
+      quantity: 1,
+    })),
+  ],
+});
 
 type Person = {
   email?: string;
@@ -107,7 +124,7 @@ export function trackBeginCheckout() {
  * page will ever be able to report: the next navigation leaves the site. It
  * survives that navigation because capi() posts with keepalive: true.
  */
-export function trackInitiateCheckout(person: Person) {
+export function trackInitiateCheckout(person: Person, addons: AddonId[] = []) {
   capi('itc_event', person);
 
   /* qc_event, for working professionals only, at the same instant.
@@ -124,19 +141,19 @@ export function trackInitiateCheckout(person: Person) {
     capi('qc_event', person);
   }
 
-  ga4AddPaymentInfo({ value: VALUE, currency: 'INR' });
+  ga4AddPaymentInfo(cart(addons));
 }
 
 /**
  * GA4 only. Meta's `sales` event comes from the Razorpay webhook, where the payment
  * is proven, firing it here as well would double-count every sale.
  */
-export function trackPurchase(transactionId: string) {
+export function trackPurchase(transactionId: string, addons: AddonId[] = []) {
   /* Keyed on the payment id, not a fixed string: a refresh, a back-forward, or
      the buyer reopening the confirmation link must not count the sale twice,
      but a genuine second purchase later must still count. Without this GA4
      revenue inflates every time someone reloads the page. */
   once(`purchase_${transactionId}`, () => {
-    ga4Purchase({ transactionId, ...money });
+    ga4Purchase({ transactionId, ...cart(addons) });
   });
 }

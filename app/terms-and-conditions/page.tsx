@@ -42,8 +42,18 @@ export default function TermsPage() {
       <h2>3. Sessions and scheduling</h2>
       <ul>
         <li>
-          Sessions run live at the advertised times. Where a recording is made
-          available, it is a courtesy and not a guaranteed part of the programme.
+          Sessions run live at the advertised times. Session recordings are not
+          part of the challenge fee. They are available only as a separately
+          priced add-on chosen at checkout, and only to participants who
+          purchased that add-on. Purchased recordings are shared on the last
+          day of the challenge, after the final live class.
+        </li>
+        <li>
+          Participants who purchased the private 1-on-1 call add-on can book
+          their slot at any time, subject to the slots available, through a
+          private booking link. The link is shown on the confirmation page
+          after payment and sent to the participant by WhatsApp and email. It
+          is personal to the participant and is not shared in any group.
         </li>
         <li>
           We may move a session for reasons outside our control. Registered

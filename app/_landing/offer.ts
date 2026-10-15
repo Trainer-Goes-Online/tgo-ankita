@@ -24,6 +24,31 @@ export const DISCOUNT_PCT = Math.floor(
   ((STRIKE_PRICE_RUPEES - PRICE_RUPEES) / STRIKE_PRICE_RUPEES) * 100,
 );
 
+/* ── THE TWO CHECKOUT ADD-ONS ────────────────────────────────────────────
+   Same positive-number guard as PRICE_RUPEES, for the same reason. Each is its
+   own env var so a price test never needs a deploy of code, and both are
+   NEXT_PUBLIC because the checkout shows them AND the server charges them:
+   one value, read on both sides, so the card and the order cannot disagree.
+
+   ⚠️ The fallbacks are placeholders until the client confirms the prices. */
+const RAW_RECORDING = Number(process.env.NEXT_PUBLIC_ADDON_RECORDING_RUPEES);
+export const RECORDING_PRICE_RUPEES =
+  Number.isFinite(RAW_RECORDING) && RAW_RECORDING > 0 ? RAW_RECORDING : 499;
+
+const RAW_CALL = Number(process.env.NEXT_PUBLIC_ADDON_CALL_RUPEES);
+export const CALL_PRICE_RUPEES = Number.isFinite(RAW_CALL) && RAW_CALL > 0 ? RAW_CALL : 1499;
+
+/* ⚠️ HOUSE COPY, NOT FROM COPY-SOURCE.md: the source has no add-ons at all.
+   Every promise below needs Ankita's read before launch, the two delivery
+   lines most of all: when the recordings arrive, and how the call is booked. */
+/* Read inside sentences: "…shared in the recordings group {RECORDINGS_DELIVERY}". */
+export const RECORDINGS_DELIVERY = 'on Day 5, right after the last class';
+export const CALL_BOOKING = "Book your slot anytime from Ankita's calendar";
+/* The booking link is PRIVATE: it is never posted in any group. It reaches the
+   buyer on the confirmation page and in the confirmation WhatsApp + email. */
+export const CALL_LINK_DELIVERY =
+  'Your private booking link is on your confirmation page and sent to you on WhatsApp & email';
+
 /* ⚠️ NO YEAR WAS SUPPLIED. The source says "21st October" and nothing more, so
    that is what renders. */
 export const START_DATE = '21st October';
@@ -49,6 +74,19 @@ export const CLIENT_RATING = '5.0';
  * moment the buyer has just paid.
  */
 export const WHATSAPP_INVITE = process.env.NEXT_PUBLIC_WHATSAPP_INVITE ?? '';
+
+/**
+ * ⚠️ REQUIRED BEFORE LAUNCH, for the add-on thank-you pages. Same rule as the
+ * invite above: an empty value renders the step's button disabled, with the
+ * support address in its place.
+ *
+ * RECORDINGS_INVITE · the SEPARATE WhatsApp group where the session
+ *   recordings are shared. Shown only to buyers of the recordings add-on.
+ * CALL_BOOKING_URL · the calendar link (Calendly, Google booking page and so
+ *   on) where a buyer of the 1-on-1 call picks a slot. Opens in a new tab.
+ */
+export const RECORDINGS_INVITE = process.env.NEXT_PUBLIC_WHATSAPP_RECORDINGS_INVITE ?? '';
+export const CALL_BOOKING_URL = process.env.NEXT_PUBLIC_CALL_BOOKING_URL ?? '';
 
 /** The next click is a payment. Every CTA on the page points here. */
 export const CHECKOUT_HREF = '/checkout';
