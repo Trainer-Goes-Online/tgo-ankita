@@ -25,7 +25,20 @@ import { ArrowRight } from '@phosphor-icons/react/dist/ssr';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { CHECKOUT_HREF } from './offer';
+import { CHECKOUT_HREF, DISCOUNT_PCT, PRICE, STRIKE_PRICE } from './offer';
+
+/* The checkout's pay label: the pay button and the mobile docked bar both use it. */
+export function CtaLabel() {
+  return (
+    <span className="flex flex-col items-center leading-tight">
+      <span>Book My Spot Now</span>
+      <span className="mt-0.5 text-[0.85em] tabular-nums">
+        <s className="mr-1 font-semibold opacity-70 decoration-2">{STRIKE_PRICE}</s>
+        {PRICE} - {DISCOUNT_PCT}% Off Today!
+      </span>
+    </span>
+  );
+}
 
 export const C = {
   /* ── environment. Never pure white: #FFF7F9 is lilac-tinted and does not

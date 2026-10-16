@@ -5,7 +5,7 @@
  *
  * The house-standard challenge checkout: a centred
  * masthead, then a two-column body with the form on the left and a STICKY
- * order summary on the right that collapses into a tap-to-open accordion on a
+ * order summary on the right that becomes a compact card above the form on a
  * phone. It imports the landing page's tokens rather than redeclaring them, so
  * the two surfaces cannot drift apart.
  *
@@ -31,7 +31,6 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
-  CaretDown,
   CheckCircle,
   CreditCard,
   Lock,
@@ -41,7 +40,6 @@ import {
 import { LEGAL } from '../_landing/legal';
 import {
   CTA_NOTE,
-  DISCOUNT_PCT,
   PRICE,
   PRICE_RUPEES,
   SESSION_TIMES_TZ,
@@ -60,7 +58,7 @@ import {
   trackInitiateCheckout,
 } from '@/lib/track';
 
-import { C } from '../_landing/shared';
+import { C, CtaLabel } from '../_landing/shared';
 import { RECAP, VALUE_TOTAL, inr } from './included';
 
 declare global {
@@ -340,16 +338,16 @@ export default function CheckoutPage() {
                 Your details
               </p>
               <h2
-                className="mt-2 font-display text-[20px] font-extrabold leading-snug sm:text-[22px]"
+                className="mt-2 hidden font-display text-[20px] font-extrabold leading-snug sm:text-[22px] lg:block"
                 style={{ color: C.ink }}
               >
                 Where should we send your seat?
               </h2>
-              <p className="mt-2 text-[12.5px] sm:text-[13px]" style={{ color: C.inkSoft }}>
+              <p className="mt-2 hidden text-[12.5px] sm:text-[13px] lg:block" style={{ color: C.inkSoft }}>
                 Your Zoom link, reminders and all four bonuses go to these.
               </p>
 
-              <div className="mt-6 flex flex-col gap-4">
+              <div className="mt-4 flex flex-col gap-4 lg:mt-6">
                 {/* First and last are separate fields, not one "Full name"
                     split on a space. Splitting guesses: it gives a two-word
                     surname to the first name, and a single-word entry no last
@@ -510,17 +508,7 @@ export default function CheckoutPage() {
                     can select, so the highlight was passing OVER the words
                     instead of behind them. */}
                 <span>
-                  {busy ? (
-                    'Taking you to payment…'
-                  ) : (
-                    <span className="flex flex-col items-center leading-tight">
-                      <span>Book My Spot - {DISCOUNT_PCT}% Off Today</span>
-                      <span className="mt-1 text-[14px] font-semibold tabular-nums">
-                        <s className="mr-1.5 opacity-75 decoration-2">{STRIKE_PRICE}</s>
-                        {PRICE}
-                      </span>
-                    </span>
-                  )}
+                  {busy ? 'Taking you to payment…' : <CtaLabel />}
                 </span>
               </button>
 
@@ -626,7 +614,7 @@ export default function CheckoutPage() {
             className="lego-press inline-flex min-h-[52px] flex-1 items-center justify-center rounded-full px-3 text-center text-[15px] font-bold leading-tight disabled:opacity-60"
             style={{ background: C.ctaFill, color: C.onAccent, boxShadow: C.ctaGlow }}
           >
-            {busy ? 'Opening…' : `Book My Spot - ${DISCOUNT_PCT}% Off Today`}
+            {busy ? 'Opening…' : <CtaLabel />}
           </button>
         </div>
       </div>
@@ -636,9 +624,8 @@ export default function CheckoutPage() {
 
 /* ── Order summary, in the house-standard order: lead item, included list,
       subtotal / bonus value, the ruled Total, the method tile, then the
-      guarantee line. Accordion below lg, always open from lg up. ───────── */
+      guarantee line. Below lg: title, lead item and guarantee line only. ── */
 function OrderSummary() {
-  const [open, setOpen] = useState(false);
   const [lead, ...bonuses] = RECAP;
   /* The challenge is priced at the strike price here, not its recap value, and
      the discount is whatever brings the full stack down to PRICE. */
@@ -650,36 +637,20 @@ function OrderSummary() {
       className="rounded-2xl p-5 sm:p-6"
       style={{ background: C.surface, border: `1px solid ${C.line}` }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-controls="order-summary-details"
-        className="flex w-full items-center justify-between gap-3 text-left lg:pointer-events-none"
-      >
-        <span className="min-w-0">
-          <span
-            className="block text-[10.5px] font-bold uppercase tracking-[0.2em]"
-            style={{ color: C.goldInk }}
-          >
-            Order summary
-          </span>
-          <span
-            className="mt-2 block font-display text-[20px] font-extrabold leading-snug sm:text-[22px]"
-            style={{ color: C.ink }}
-          >
-            The 5-Day Reset, in full
-          </span>
-          <span className="mt-1 block text-[12px] lg:hidden" style={{ color: C.inkSoft }}>
-            {open ? 'Tap to hide details' : 'Tap to view what is included'}
-          </span>
+      <div>
+        <span
+          className="block text-[10.5px] font-bold uppercase tracking-[0.2em]"
+          style={{ color: C.goldInk }}
+        >
+          Order summary
         </span>
-        <CaretDown
-          weight="bold"
-          className={`h-4 w-4 shrink-0 transition-transform lg:hidden ${open ? 'rotate-180' : ''}`}
-          style={{ color: C.inkSoft }}
-        />
-      </button>
+        <span
+          className="mt-2 hidden font-display text-[20px] font-extrabold leading-snug sm:text-[22px] lg:block"
+          style={{ color: C.ink }}
+        >
+          The 5-Day Reset, in full
+        </span>
+      </div>
 
       {/* Lead item, always visible: it is the thing being bought. */}
       <div
@@ -716,7 +687,7 @@ function OrderSummary() {
         </div>
       </div>
 
-      <div id="order-summary-details" className={`${open ? 'block' : 'hidden'} lg:block`}>
+      <div className="hidden lg:block">
         <div className="mt-4 space-y-1.5">
           <p
             className="text-[10.5px] font-bold uppercase tracking-[0.16em]"
@@ -753,11 +724,11 @@ function OrderSummary() {
         </div>
       </div>
 
-      <div className="my-4 h-px" style={{ background: C.line }} />
+      <div className="my-4 hidden h-px lg:block" style={{ background: C.line }} />
 
       {/* The ruled Total. Gold appears here and nowhere else on the page. */}
       <div
-        className="rounded-2xl px-4 py-3.5"
+        className="hidden rounded-2xl px-4 py-3.5 lg:block"
         style={{ background: C.goldWash, border: `1px solid ${C.lineStrong}` }}
       >
         <div className="flex items-baseline justify-between gap-3">
