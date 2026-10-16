@@ -2,6 +2,7 @@ import crypto from 'crypto';
 
 import { NextResponse } from 'next/server';
 
+import { bundleKey, cleanAddons, orderTotal } from '@/lib/addons';
 import { ATTR_COOKIE, packJsonNote, readAttrCookie } from '@/lib/attribution-edge';
 import { CHECKOUT_CONFIG, isTestMode } from '@/lib/checkout-config';
 import { readClientIp, readClientUserAgent, readRequestCookie } from '@/lib/request-signals';
@@ -64,6 +65,12 @@ export async function POST(req: Request) {
   if (!firstName || !lastName || !email || !phone || !city || !occupation) {
     return NextResponse.json({ ok: false, reason: 'missing-fields' }, { status: 400 });
   }
+
+  /* IDS from the browser, never an amount. Unknown ids are dropped, and the
+     price is computed here from offer.ts, so a tampered request can change
+     WHAT is bought but never what it costs. */
+  const addons = cleanAddons(body.addons);
+  const amountPaise = orderTotal(addons) * 100;
 
   const utm = (body.utm ?? {}) as Record<string, string | undefined>;
 
@@ -128,13 +135,21 @@ export async function POST(req: Request) {
      and `packJsonNote` keeps each one valid by shortening its LONGEST value
      until it fits, never by cutting the finished JSON.
 
-     FOURTEEN KEYS against Razorpay's limit of fifteen, so there is one spare.
-     Ported from ResetByShruti, whose data has been clean on this shape. */
+     FIFTEEN KEYS against Razorpay's limit of fifteen, so there are NONE
+     spare: a sixteenth key rejects the order. Fold anything new into one of
+     the packJsonNote bundles instead. Ported from ResetByShruti, whose data
+     has been clean on this shape. */
   const notes: Record<string, string> = {
     /* One constant, shared with the webhook that checks it. See the note on
        orderKind in lib/checkout-config.ts. */
     kind: CHECKOUT_CONFIG.orderKind,
     lead_id: leadId,
+    /* WHAT WAS BOUGHT: "base", "base_recording", "base_call" or
+       "base_recording_call". Its own key rather than a field in a bundle,
+       because the fulfilment email depends on it and a bundle value can be
+       nibbled by packJsonNote. The webhook also re-derives it from the paid
+       amount if this ever arrives missing. */
+    pkg: bundleKey(addons),
     /* Readable in the Razorpay dashboard, for whoever opens a payment at 11pm
        trying to work out whose refund it is. */
     name: truncate(`${firstName} ${lastName}`.trim()),
@@ -231,8 +246,12 @@ export async function POST(req: Request) {
       notes[k] = v.slice(0, 256);
     }
   }
-  if (Object.keys(notes).length > 15) {
-    console.error('[create-order] notes over Razorpay 15-key cap', Object.keys(notes).length);
+  /* At the cap, so this is now a repair and not just a log: the least
+     valuable keys (the dashboard-only copies) go first. */
+  for (const k of ['ref', 'clid']) {
+    if (Object.keys(notes).length <= 15) break;
+    console.error(`[create-order] notes over Razorpay 15-key cap, dropping "${k}"`);
+    delete notes[k];
   }
 
   try {
@@ -243,7 +262,7 @@ export async function POST(req: Request) {
         authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString('base64')}`,
       },
       body: JSON.stringify({
-        amount: CHECKOUT_CONFIG.amountPaise,
+        amount: amountPaise,
         currency: CHECKOUT_CONFIG.currency,
         /* THIS funnel's prefix. It is what a receipt is searched by in the
            Razorpay dashboard, so another funnel's initials on it sends whoever
@@ -288,6 +307,7 @@ export async function POST(req: Request) {
       isTest: isTestMode(),
       orderId: order.id,
       amount: order.amount,
+      bundle: notes.pkg,
       currency: order.currency,
       keyId, // publishable by design: the browser needs it to open the sheet
     });

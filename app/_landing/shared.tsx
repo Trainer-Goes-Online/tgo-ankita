@@ -25,16 +25,26 @@ import { ArrowRight } from '@phosphor-icons/react/dist/ssr';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { CHECKOUT_HREF, DISCOUNT_PCT, PRICE, STRIKE_PRICE } from './offer';
+import { CHECKOUT_HREF, DISCOUNT_PCT, PRICE, PRICE_RUPEES, STRIKE_PRICE, inr } from './offer';
 
-/* The checkout's pay label: the pay button and the mobile docked bar both use it. */
-export function CtaLabel() {
+/* The checkout's pay label: the pay button and the mobile docked bar both use
+   it. The strike and % off describe the seat alone, so both drop once add-ons
+   push the total past the seat price. */
+export function CtaLabel({ total = PRICE_RUPEES }: { total?: number }) {
   return (
     <span className="flex flex-col items-center leading-tight">
       <span>Book My Spot Now</span>
       <span className="mt-0.5 text-[0.85em] tabular-nums">
-        <s className="mr-1 font-semibold opacity-70 decoration-2">{STRIKE_PRICE}</s>
-        {PRICE} - {DISCOUNT_PCT}% Off Today!
+        {total === PRICE_RUPEES ? (
+          <>
+            <s className="mr-1 font-semibold opacity-70 decoration-2">{STRIKE_PRICE}</s>
+            {PRICE} - {DISCOUNT_PCT}% Off Today!
+          </>
+        ) : (
+          <span key={total} className="addon-pop">
+            Total {inr(total)}
+          </span>
+        )}
       </span>
     </span>
   );

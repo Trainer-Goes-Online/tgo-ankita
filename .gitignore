@@ -6,3 +6,6 @@ out
 .env.example
 .DS_Store
 *.tsbuildinfo
+
+# Personal: confirmation email + WhatsApp message drafts
+docs/confirmation-messages/
