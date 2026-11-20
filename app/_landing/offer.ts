@@ -180,11 +180,11 @@ export const CHECKOUT_HREF = '/checkout';
 
 /* The source pair, with the price swapped for the discount. Used at the hero,
    the live-sessions card and the closing recap. */
-export const CTA_LABEL = `Start Your 2-Day Reset · ${DISCOUNT_PCT}% Off Today`;
+export const CTA_LABEL = 'Start Your 2-Day Reset';
 export const CTA_NOTE = '100% Money-Back Guarantee';
 
 /** The two-options beat words its button differently from every other CTA. */
-export const CTA_LABEL_ACTION = `Take Action · ${DISCOUNT_PCT}% Off Today`;
+export const CTA_LABEL_ACTION = 'Take Action';
 
 /** 2500 → "₹2,500". One formatter, so a value never renders two ways. */
 export const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`;

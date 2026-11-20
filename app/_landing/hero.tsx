@@ -44,7 +44,7 @@ import {
 } from './offer';
 import { asset } from './asset-version';
 import { SeatCount } from './seat-count';
-import { C } from './shared';
+import { C, CtaText } from './shared';
 
 /* ══ 0 · Announcement strip ════════════════════════════════════════════════ */
 export function AnnouncementBar() {
@@ -125,7 +125,7 @@ export function AnnouncementBar() {
 
 /* ══ 1 · Hero ══════════════════════════════════════════════════════════════ */
 
-const HERO_CTA_LABEL = `Book My Seat Now - ${DISCOUNT_PCT}% Off Today!`;
+const HERO_CTA_LABEL = 'Book My Seat Now';
 
 export function Hero() {
   return (
@@ -198,20 +198,6 @@ export function Hero() {
               .
             </p>
 
-            <p
-              className="mx-auto mt-6 flex max-w-[620px] flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[14.5px] font-semibold lg:mt-4"
-              style={{ color: C.ink }}
-            >
-              <span className="inline-flex gap-0.5" aria-label="Five stars">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <Star key={i} weight="fill" className="h-4 w-4" style={{ color: C.goldDeep }} />
-                ))}
-              </span>
-              <span>
-                Trusted by {WOMEN_GUIDED} women across their fertility &amp; motherhood journeys
-              </span>
-            </p>
-
             {/* Photo left, light info right (stacked on phones), widened past
                 the 860 copy column on desktop. */}
             <div className="mt-8 grid gap-8 text-left lg:-mx-[90px] lg:mt-6 lg:grid-cols-2 lg:items-stretch lg:gap-10">
@@ -237,13 +223,7 @@ export function Hero() {
                     ['--shimmer' as string]: 'rgba(255,255,255,0.55)',
                   }}
                 >
-                  <span className="inline-flex items-center gap-2.5">
-                    {HERO_CTA_LABEL}
-                    <ArrowRight
-                      weight="bold"
-                      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
-                    />
-                  </span>
+                  <CtaText label={HERO_CTA_LABEL} />
                 </Link>
 
                 <p

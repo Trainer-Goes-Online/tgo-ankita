@@ -50,7 +50,7 @@ import {
   SESSION_TIMES_TZ,
 } from './offer';
 import { asset } from './asset-version';
-import { Art, C, CtaNote, DayTimes, MOBILE_CTA_LABEL, PrimaryCTA, SectionHeading } from './shared';
+import { Art, C, CtaNote, CtaText, DayTimes, MOBILE_CTA_LABEL, PrimaryCTA, SectionHeading } from './shared';
 
 /* ══ 9 · Meet Ankita Singh ═════════════════════════════════════════════════
  *
@@ -417,13 +417,13 @@ function TwoOptions() {
               ['--shimmer' as string]: 'rgba(242, 76, 105,0.25)',
             }}
           >
-            <span className="inline-flex items-center gap-2.5">
-              <span className="sm:hidden">{MOBILE_CTA_LABEL}</span>
-              <span className="hidden sm:inline">{CTA_LABEL_ACTION}</span>
-              <ArrowRight
-                weight="bold"
-                className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
-              />
+            <span>
+              <span className="sm:hidden">
+                <CtaText label={MOBILE_CTA_LABEL} />
+              </span>
+              <span className="hidden sm:inline">
+                <CtaText label={CTA_LABEL_ACTION} />
+              </span>
             </span>
           </Link>
         </div>

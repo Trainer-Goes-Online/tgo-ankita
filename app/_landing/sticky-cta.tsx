@@ -6,19 +6,13 @@
  * On phones it is always on screen. From md up it shows only between the hero
  * and the closing recap, where no other CTA is in view.
  */
-import { ArrowRight, CalendarBlank } from '@phosphor-icons/react/dist/ssr';
+import { ArrowRight } from '@phosphor-icons/react/dist/ssr';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-import {
-  CHECKOUT_HREF,
-  DATES_SHORT,
-  DISCOUNT_PCT,
-  PRICE,
-  SESSION_SHORT,
-  STRIKE_PRICE,
-} from './offer';
-import { C, TimeChip } from './shared';
+import { CHECKOUT_HREF, DISCOUNT_PCT } from './offer';
+import { SeatCount } from './seat-count';
+import { C, CtaText } from './shared';
 
 export default function StickyCta() {
   const [show, setShow] = useState(false);
@@ -81,44 +75,29 @@ export default function StickyCta() {
           }}
         />
   
-        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-3 px-4 py-3 sm:px-8">
-          <div className="min-w-0 shrink-0">
-            <p
-              className="truncate font-display text-[13px] font-bold leading-tight sm:text-[16.5px]"
-              style={{ color: C.ink }}
+        <div className="mx-auto flex max-w-[1180px] items-center justify-between gap-2 px-3 py-3 min-[375px]:gap-3 min-[375px]:px-4 sm:px-8">
+          {/* Left side: limited seats only (the same live count as the hero). */}
+          <p
+            className="min-w-0 shrink font-display text-[12.5px] font-bold leading-tight min-[375px]:text-[14px] sm:text-[17px]"
+            style={{ color: C.ink }}
+          >
+            Only{' '}
+            <span className="seat-chip">
+              <SeatCount />
+            </span>{' '}
+            seats left
+            <span
+              className="mt-0.5 block font-body text-[10px] font-semibold min-[375px]:text-[11px] sm:text-[12.5px]"
+              style={{ color: C.coralInk }}
             >
-              2-Day Fertility Reset
-            </p>
-            <p className="mt-0.5 flex items-baseline gap-1.5 tabular-nums">
-              <s
-                className="text-[12px] font-semibold decoration-2 sm:text-[13px]"
-                style={{ color: C.inkSoft }}
-              >
-                {STRIKE_PRICE}
-              </s>
-              <span
-                className="font-display text-[20px] font-extrabold leading-none sm:text-[22px]"
-                style={{ color: C.goldDeep }}
-              >
-                {PRICE}
-              </span>
-            </p>
-            <p
-              className="mt-1 hidden items-center gap-3 truncate text-[12px] font-normal sm:flex"
-              style={{ color: C.inkMuted }}
-            >
-              <span className="inline-flex shrink-0 items-center gap-1.5">
-                <CalendarBlank weight="bold" className="h-3 w-3" style={{ color: C.goldInk }} />
-                {DATES_SHORT}
-              </span>
-              <TimeChip text={SESSION_SHORT} size="sm" />
-            </p>
-          </div>
+              Booking closes once full
+            </span>
+          </p>
 
           <Link
             href={CHECKOUT_HREF}
             data-cta
-            className="lego-press cta-shimmer group inline-flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-full px-4 text-center text-[14px] font-bold leading-tight sm:flex-none sm:px-7 sm:text-[15px]"
+            className="lego-press cta-shimmer group inline-flex min-h-[50px] flex-1 items-center justify-center whitespace-nowrap rounded-full px-2.5 text-center text-[12px] font-bold leading-tight min-[375px]:px-4 min-[375px]:text-[14px] sm:flex-none sm:px-7 sm:text-[15px]"
             style={{
               background: C.ctaFill,
               color: C.onAccent,
@@ -126,14 +105,7 @@ export default function StickyCta() {
               ['--shimmer' as string]: 'rgba(252, 228, 234,0.42)',
             }}
           >
-            <span className="inline-flex items-center gap-2">
-              Book My Spot
-              <span className="-ml-1 hidden sm:inline">- {DISCOUNT_PCT}% Off Today</span>
-              <ArrowRight
-                weight="bold"
-                className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5"
-              />
-            </span>
+            <CtaText label="Book My Spot" />
           </Link>
         </div>
       </div>

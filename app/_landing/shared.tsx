@@ -188,7 +188,26 @@ export function SectionHeading({
  *           bloom.
  */
 /** The one CTA label phones see on every section button. */
-export const MOBILE_CTA_LABEL = `Book My Seat Now - ${DISCOUNT_PCT}% Off Today`;
+export const MOBILE_CTA_LABEL = 'Book My Seat Now';
+
+/**
+ * Every landing-page CTA reads "<label> → 96% OFF" (the arrow BETWEEN the
+ * action and the discount), on ONE line: whitespace-nowrap on the whole run.
+ * The arrow nudges right on hover via the parent's `group`.
+ */
+export function CtaText({ label, className = '' }: { label: React.ReactNode; className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap sm:gap-2 ${className}`}>
+      <span>{label}</span>
+      <ArrowRight
+        weight="bold"
+        aria-hidden
+        className="h-[1em] w-[1em] shrink-0 transition-transform duration-300 group-hover:translate-x-0.5"
+      />
+      <span className="font-extrabold">{DISCOUNT_PCT}% OFF</span>
+    </span>
+  );
+}
 
 export function PrimaryCTA({
   href = CHECKOUT_HREF,
@@ -240,15 +259,15 @@ export function PrimaryCTA({
         ['--shimmer' as string]: skin.shimmer,
       }}
     >
-      <span className="inline-flex items-center gap-2.5">
-        {/* Phones get one short, consistent label; wider screens keep the
-            section's own wording. */}
-        <span className="sm:hidden">{MOBILE_CTA_LABEL}</span>
-        <span className="hidden sm:inline">{label}</span>
-        <ArrowRight
-          weight="bold"
-          className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
-        />
+      {/* Phones get one short, consistent label; wider screens keep the
+          section's own wording. Both read "<label> → 96% OFF". */}
+      <span>
+        <span className="sm:hidden">
+          <CtaText label={MOBILE_CTA_LABEL} />
+        </span>
+        <span className="hidden sm:inline">
+          <CtaText label={label} />
+        </span>
       </span>
     </Link>
   );

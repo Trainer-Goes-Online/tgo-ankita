@@ -52,7 +52,7 @@ import {
   DAY2_SLOTS,
 } from './offer';
 import { Recognition, Testimonials } from './proof';
-import { C, DayTab, DayTimes, SectionHeading, SlotChips } from './shared';
+import { C, CtaText, DayTab, DayTimes, SectionHeading, SlotChips } from './shared';
 import Toolkit from './toolkit';
 
 /* ══ 3 · What Will Change After This 2-Day Reset ══════════════════════════
@@ -605,13 +605,7 @@ function SessionsBand() {
                 ['--shimmer' as string]: 'rgba(242, 76, 105,0.25)',
               }}
             >
-              <span className="inline-flex items-center gap-2.5">
-                Reserve My Seat
-                <ArrowRight
-                  weight="bold"
-                  className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
-                />
-              </span>
+              <CtaText label="Reserve My Seat" />
             </Link>
             <p className="mt-3.5 text-[13.5px] font-medium" style={{ color: C.onDarkMute }}>
               {CTA_NOTE}
